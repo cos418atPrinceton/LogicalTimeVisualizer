@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <title>Logical Time Visualizer</title>
+  </head>
+  <body>
+    <div class="container">
+        <h1 class="display-5 text-center">Logical Time Visualizer</h1>
+        <br>
+
+        <form id="formDetails">
+            <p>
+                <label for="nodesNumSlider" class="form-label" id="nodesNumLabel">Number of nodes (processes): </label>
+                <text id="nodesNumVal">5</text>
+            </p>
+            <input type="range" class="form-range" min="0" max="10" id="nodesNumSlider">
+            <div class="mb-3">
+                <label for="eventsNum" class="form-label">Number of events</label>
+                <input type="text" class="form-control" id="eventsNUm">
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitDetails">Submit</button>
+        </form>
+
+        <meta charset="utf-8">
+
+        <br>
+
+        <!-- Create a div where the graph will take place -->
+        <div id="my_dataviz"></div>
+    </div>
+    
+    <!-- Load d3.js -->
+    <script src="https://d3js.org/d3.v4.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="index.js"></script>
+    <script src="visualize.js"></script>
+  </body>
+</html>
