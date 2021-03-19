@@ -3,7 +3,7 @@ function setUp() {
 
     $(document).on('submit', '#formDetails', function(event) {
         event.preventDefault()
-        drawEventCircles()
+        drawProcessLines()
     });
 }
 

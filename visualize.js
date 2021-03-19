@@ -1,11 +1,14 @@
-var width = 2000;
+var width = document.getElementById('mainContainer').offsetWidth*0.6;
 var height = 500;
+processLineWidthSpacing = 0
+processLineMargin = 30
+processLineStart = 60
 
 //Create SVG element
-var svg = d3.select("body")
+var svg = d3.select("#vizDiv")
 .append("svg")
 .attr("width", width)
-.attr("height", height);
+.attr("height", height)
 
 circlePositions = []
 
@@ -14,23 +17,31 @@ function drawProcessLines () {
     d3.selectAll("line").remove();
     d3.selectAll("text").remove();
     d3.selectAll("circle").remove();
-    d3.selectAll(".messageLine").remove();
+    d3.selectAll("#messagePath").remove();
+    d3.selectAll("#arrow").remove();
 
     numProcesses = $('#nodesNumSlider').val()
     $('#nodesNumVal').html(numProcesses)
 
-    for (i = 1; i <= numProcesses; i++) {
+    processLineWidthSpacing = width/10 - 5
+
+    for (i = 0; i < numProcesses; i++) {
         svg.append("line")
-        .attr("x1", 150*i)
-        .attr("x2", 150*i)
-        .attr("y1", 50)
+        .attr("x1", processLineWidthSpacing*i+processLineMargin)
+        .attr("x2", processLineWidthSpacing*i+processLineMargin)
+        .attr("y1", processLineStart)
         .attr("y2", 400)
         .attr("stroke", "black")
 
         svg.append("text")
-        .attr("x", 150*i)
+        .attr("x", processLineWidthSpacing*i+processLineMargin)
         .attr("y", 30)
-        .text("p" + i);
+        .text("p" + (i+1));
+
+        svg.append("text")
+        .attr("x", processLineWidthSpacing*i+processLineMargin)
+        .attr("y", 50)
+        .text("C: " + 0);
     }
 
     circlePositions = drawEventCircles()
@@ -38,55 +49,51 @@ function drawProcessLines () {
 }
 
 // http://bl.ocks.org/WilliamQLiu/76ae20060e19bf42d774
-function handleMouseOver(d, i) {  // Add interactivity
+function handleMouseOver() {
     // Use D3 to select element, change color and size
-    console.log("hello")
-    d3.select(this).attr({
-        fill: "orange",
-        r: this.r * 2
-    });
+    node = d3.select(this)
+             .style('fill', 'orange')
+             .attr('r', 10)
 
-    // Specify where to put label of text
-    svg.append("text").attr({
-        id: "t" + d.cx + "-" + d.cy + "-" + i,  // Create an id for text so we can select it later for removing on mouseout
-        x: function() { return xScale(d.x) - 30; },
-        y: function() { return yScale(d.y) - 15; }
-    })
-    .text(function() {
-        return [d.cx, d.cy];  // Value of the text
-    });
+    console.log(node.attr("id"))
+    svg.append('text')
+        .attr("dx", parseInt(node.attr("cx"))+15)
+        .attr("dy", parseInt(node.attr("cy"))+15)
+        .attr("id", "eventDetails")
+        .text("hello");
 }
 
-function handleMouseOut(d, i) {
+function handleMouseOut() {
     // Use D3 to select element, change color back to normal
-    d3.select(this).attr({
-        fill: "black",
-        r: this.r
-    });
+    node = d3.select(this)
+            .style('fill', 'green')
+            .attr('r', 7)
 
-    // Select text by id and then remove
-    d3.select("#t" + d.cx + "-" + d.cy + "-" + i).remove();  // Remove text location
+    d3.selectAll("#eventDetails").remove();
 }
 
 function drawEventCircles () {
-    numEventsVal = $('#eventsNUm').val()
+    numEventsVal = $('#eventsNum').val()
 
     circlePositions = []
     d3.selectAll("circle").remove();
-    d3.selectAll(".messageLine").remove();
+    d3.selectAll("#messagePath").remove();
+    d3.selectAll("#arrow").remove();
 
-    for (i = 1; i <= numEventsVal; i++) {
+    for (i = 0; i < numEventsVal; i++) {
 
         numProcesses = $('#nodesNumSlider').val()
-        processesLocation = Math.floor(Math.random() * numProcesses) + 1
+        processesLocation = Math.floor(Math.random() * numProcesses)
 
-        xPos = 150*processesLocation
-        yPos = 50+(350/numEventsVal)*i
+        xPos = processLineWidthSpacing*processesLocation+processLineMargin
+        yPos = (processLineStart)+(350/numEventsVal)*i
 
         svg.append('circle')
             .attr('cx', xPos)
             .attr('cy', yPos)
-            .attr('r', 5)
+            .attr('r', 7)
+            .attr('id', i)
+            .attr('processNum', processesLocation)
             .style('fill', 'green')
             .on("mouseover", handleMouseOver)
             .on("mouseout", handleMouseOut);
@@ -148,16 +155,55 @@ function createEventChain(eventNode) {
         x2 = eventChain.events[i+1].x
         y2 = eventChain.events[i+1].y
 
-        svg.append("line")
-        .attr("x1", x1)
-        .attr("x2", x2)
-        .attr("y1", y1)
-        .attr("y2", y2)
-        .attr("stroke", "blue")
-        .attr("class", "messageLine")
-    }
+        if ((x1 == x2) && (y1 == y2)) continue
 
-    // eventChain.print()
+        svg
+        .append('defs')
+        .append('marker')
+        .attr('id', 'arrow')
+        .attr('viewBox', [0, 0, 20, 20])
+        .attr('refX', 10)
+        .attr('refY', 10)
+        .attr('markerWidth', 10)
+        .attr('markerHeight', 10)
+        .attr('orient', 'auto-start-reverse')
+        .append('path')
+        .attr('d', d3.line()([[0, 0], [0, 20], [20, 10]]))
+        .attr('stroke', 'black');
+
+        // create the path
+        points = []
+        if (x2 > x1) {
+            m = (y2-y1)/(x2-x1)
+            x1_ = x1 + 5
+            y1_ = y1 + m*5
+            x2_ = x2 - 10
+            y2_ = y2 - (m*10)
+            points = [[x1_, y1_], [x2_, y2_]]
+        } else if (x1 > x2) {
+            m = (y2-y1)/(x2-x1)
+            x1_ = x1 - 5
+            y1_ = y1 - m*5
+            x2_ = x2 + 10
+            y2_ = y2 + (m*10)
+            points = [[x1_, y1_], [x2_, y2_]]
+        } else {
+            x1_ = x1
+            y1_ = y1 + 5
+            x2_ = x2
+            y2_ = y2 - 10
+            points = [[x1_, y1_], [x2_, y2_]]
+        }
+
+    
+        svg
+        .append('path')
+        .attr('id', 'messagePath')
+        .attr('d', d3.line()(points))
+        .attr('stroke', 'black')
+        .attr('marker-end', 'url(#arrow)')
+        .attr('fill', 'none');
+    }
 }
 
 function drawEventChains(circlePositions) {
