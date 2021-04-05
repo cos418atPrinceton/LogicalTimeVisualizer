@@ -25,7 +25,7 @@ function drawProcessLines () {
 
     processLineWidthSpacing = width/10 - 5
 
-    for (i = 0; i < numProcesses; i++) {
+    for (var i = 0; i < numProcesses; i++) {
         svg.append("line")
         .attr("x1", processLineWidthSpacing*i+processLineMargin)
         .attr("x2", processLineWidthSpacing*i+processLineMargin)
@@ -41,6 +41,7 @@ function drawProcessLines () {
         svg.append("text")
         .attr("x", processLineWidthSpacing*i+processLineMargin)
         .attr("y", 50)
+        .attr("id", "timeStamp")
         .text("C: " + 0);
     }
 
@@ -49,21 +50,14 @@ function drawProcessLines () {
 }
 
 // http://bl.ocks.org/WilliamQLiu/76ae20060e19bf42d774
-function handleMouseOver() {
+function handleMouseOverNode() {
     // Use D3 to select element, change color and size
     node = d3.select(this)
              .style('fill', 'orange')
              .attr('r', 10)
-
-    console.log(node.attr("id"))
-    svg.append('text')
-        .attr("dx", parseInt(node.attr("cx"))+15)
-        .attr("dy", parseInt(node.attr("cy"))+15)
-        .attr("id", "eventDetails")
-        .text("hello");
 }
 
-function handleMouseOut() {
+function handleMouseOutNode() {
     // Use D3 to select element, change color back to normal
     node = d3.select(this)
             .style('fill', 'green')
@@ -77,10 +71,10 @@ function drawEventCircles () {
 
     circlePositions = []
     d3.selectAll("circle").remove();
-    d3.selectAll("#messagePath").remove();
+    d3.selectAll(".messagePath").remove();
     d3.selectAll("#arrow").remove();
 
-    for (i = 0; i < numEventsVal; i++) {
+    for (var i = 0; i < numEventsVal; i++) {
 
         numProcesses = $('#nodesNumSlider').val()
         processesLocation = Math.floor(Math.random() * numProcesses)
@@ -95,8 +89,8 @@ function drawEventCircles () {
             .attr('id', i)
             .attr('processNum', processesLocation)
             .style('fill', 'green')
-            .on("mouseover", handleMouseOver)
-            .on("mouseout", handleMouseOut);
+            .on("mouseover", handleMouseOverNode)
+            .on("mouseout", handleMouseOutNode);
 
         circlePositions.push([xPos, yPos])
     }
@@ -104,6 +98,43 @@ function drawEventCircles () {
 }
 
 messages = []
+messageNum = 0
+
+function handleMouseOverMessage() {
+    message = d3.select(this)
+    messageNum = message.attr("id")
+
+    d3.selectAll(".messagePath")
+        .style("stroke-opacity", 0.3)
+        .style("stroke-width", "1px")
+        .attr('stroke', 'blue')
+    
+    d3.selectAll("#" + messageNum)
+        .style("stroke-opacity", 1.0)
+        .style("stroke-width", "2px")
+        .attr('stroke', 'red')
+
+    getTimeStamps(message)
+}
+
+
+function getTimeStamps(message) {
+    messageNum = message.attr("id").
+    messageNum = messageNum.substring("messagePath".length, messageNum.length)
+    console.log(timeStampsArray[messageNum])
+
+    var j = 0
+    d3.selectAll("#timeStamp")
+        .each(function(d, i){
+            d3.select(this).text("C: " + timeStampsArray[messageNum][j++])
+        })
+
+    numProcesses = $('#nodesNumSlider').val()
+
+}
+
+const eventLinks = new Set()
+const timeStampsArray = []
 
 function createEventChain(eventNode) {
     var eventChain = {
@@ -131,31 +162,57 @@ function createEventChain(eventNode) {
             }
         }
     }
+
+    var timeStamps = []
+    numProcesses = $('#nodesNumSlider').val()
+    for (var i = 0; i < numProcesses; i++) {
+        timeStamps.push(0)
+    }
+
     eventChain.addEvent(eventNode)
     eventsAddedCount = 0
-    for (i = 0; i < circlePositions.length; i++) {
+    currEvent = eventNode
+    for (var i = 0; i < circlePositions.length; i++) {
+
+        // add to event chain with probability 0.5
+        addProbability = Math.random()
+        if (addProbability < 0.5) continue
+
         var event2 = {
             x: circlePositions[i][0],
             y: circlePositions[i][1],
+            processNum: function() {
+                return Math.round((circlePositions[i][0]-processLineMargin)/processLineWidthSpacing)
+            },
             print: function() {
                 console.log("x: " + this.x + " y: " +  this.y)
             }
         }
         if (eventChain.addEvent(event2)) {
+            processNumCurrEvent = currEvent.processNum()
+            processNumEvent2 = event2.processNum()
+
+            timeStamps[processNumCurrEvent] = timeStamps[processNumCurrEvent] + 1
+
+            if (processNumCurrEvent == processNumEvent2) continue
+
+            timeStamps[processNumEvent2] = 1+Math.max(timeStamps[processNumCurrEvent], timeStamps[processNumEvent2])
             eventsAddedCount++
         }
+        currEvent = event2
+
     }
 
     // draw the event chain
     len = eventChain.length()-1
-    for (i = 0; i < len; i++) {
+    for (var i = 0; i < len; i++) {
         x1 = eventChain.events[i].x
         y1 = eventChain.events[i].y
 
         x2 = eventChain.events[i+1].x
         y2 = eventChain.events[i+1].y
 
-        if ((x1 == x2) && (y1 == y2)) continue
+        if ((x1 == x2) || (y1 == y2)) continue
 
         svg
         .append('defs')
@@ -169,7 +226,7 @@ function createEventChain(eventNode) {
         .attr('orient', 'auto-start-reverse')
         .append('path')
         .attr('d', d3.line()([[0, 0], [0, 20], [20, 10]]))
-        .attr('stroke', 'black');
+        .attr('stroke', 'black')
 
         // create the path
         points = []
@@ -198,27 +255,46 @@ function createEventChain(eventNode) {
     
         svg
         .append('path')
-        .attr('id', 'messagePath')
+        .attr('class', 'messagePath')
+        .attr('id', 'messagePath' + messageNum)
         .attr('d', d3.line()(points))
-        .attr('stroke', 'black')
+        .attr('stroke', 'blue')
         .attr('marker-end', 'url(#arrow)')
-        .attr('fill', 'none');
+        .attr('fill', 'none')
+        .style("stroke-opacity", 0.1)
+        .style("stroke-width", "1px")
+        .style("display", function() {
+            if (eventLinks.has([x1, y1, x2, y2])) {
+                return "none"
+            }
+        })
+        .on("mouseover", handleMouseOverMessage)
     }
+
+    eventLinks.add([x1, y1, x2, y2])
+    timeStampsArray.push(timeStamps)
+    messageNum++
+    console.log()
+
 }
 
 function drawEventChains(circlePositions) {
 
-    for (i = 0; i < circlePositions.length; i++) {
+    for (var i = 0; i < circlePositions.length; i++) {
         xPos = circlePositions[i][0]
         yPos = circlePositions[i][1]
 
         var eventNode = {
             x: xPos,
             y: yPos,
+            processNum: function() {
+                return Math.round((xPos-processLineMargin)/processLineWidthSpacing)
+            },
             print: function() {
                 console.log("x: " + this.x + " y: " +  this.y)
             }
         }
+
         createEventChain(eventNode)
     }
 
