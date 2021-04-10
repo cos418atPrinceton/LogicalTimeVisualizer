@@ -11,9 +11,9 @@ processLineLength = processLineEnd-processLineStart
 
 //Create SVG element
 var svg = d3.select("#vizDiv")
-.append("svg")
-.attr("width", width)
-.attr("height", height)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
 
 // generate lines for nodes/ processes
 function drawProcessLines () {
@@ -112,7 +112,6 @@ function handleCircleDragged() {
         y2 = arrow.attr('y2')
 
         if ((newY > y1) && (newY >= yLimitAbove) && (newY <= yLimitBelow)) {
-            console.log("if!")
             node.attr("cy", newY)
             points = [[x1, y1], [x2, newY]]
             arrow.attr('d', d3.line()(points))
@@ -120,17 +119,17 @@ function handleCircleDragged() {
                 .attr('y1', points[0][1])
                 .attr('x2', points[1][0])
                 .attr('y2', points[1][1])
-        } else {
-            console.log("else!")
         }
     } else {
         if ((newY >= yLimitAbove) && (newY <= yLimitBelow)) {
             node.attr("cy", newY)
         }
     }
+
+    d3.selectAll("#cvText" + node.attr('id')).remove();
 }
 
-function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRecipientPos) {
+function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRecipientPos, clockValues) {
     svg.append('circle')
         .attr('id', circleId)
         .attr('messageNum', messageNum)
@@ -140,11 +139,69 @@ function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRec
         .attr('senderRecipientPos', senderRecipientPos)
         .attr('r', circleRadius)
         .attr('processNum', processesLocation)
+        .attr('clockValues', clockValues)
+        .attr('clockValuesVisible', 0)
         .style('fill', 'green')
-        .call(d3.drag().on("drag", handleCircleDragged))
+        .on("mouseover", handleMouseOverNode)
+        .on("mouseout", handleMouseOutNode)
+        .on("click", handleMouseClickNode)
+        .call(d3.drag().on("drag", handleCircleDragged));
 }
 
-timeClockValues = []
+// http://bl.ocks.org/WilliamQLiu/76ae20060e19bf42d774
+function handleMouseOverNode() {
+    // Use D3 to select element, change color and size
+    node = d3.select(this)
+             .style('fill', 'red')
+             .attr('r', 10)
+
+    xPos = parseInt(node.attr('cx'))+10
+    yPos = parseInt(node.attr('cy'))+10
+
+    clockValues = node.attr('clockValues')
+
+    svg.append('text')
+        .attr('id', 'cvText' + node.attr('id'))
+        .text(clockValues)
+        .attr('x', xPos)
+        .attr('y', yPos)
+}
+
+function handleMouseOutNode() {
+    // Use D3 to select element, change color back to normal
+    node = d3.select(this)
+            .style('fill', 'green')
+            .attr('r', 7)      
+
+    if (node.attr('clockValuesVisible') == false) {
+        d3.selectAll("#cvText" + node.attr('id')).remove();
+    }
+}
+
+function handleMouseClickNode() {
+    node = d3.select(this)
+    clockValues = node.attr('clockValues')
+
+    xPos = parseInt(node.attr('cx'))+10
+    yPos = parseInt(node.attr('cy'))+10
+
+    if (node.attr('clockValuesVisible') == true) {
+        d3.selectAll("#cvText").remove();
+
+        node.attr('clockValuesVisible', 0)
+    } else {
+        svg.append('text')
+            .attr('id', 'cvText')
+            .text(clockValues)
+            .attr('x', xPos)
+            .attr('y', yPos)
+
+        node.attr('clockValuesVisible', 1)
+    } 
+}
+
+lamportTimeClockValues = []
+vectorTimeClockValues = []
 eventsPerProcess = []
 
 circleId = 0
@@ -158,7 +215,15 @@ function drawEventCircles () {
     d3.selectAll("#arrow").remove();
 
     for (var i = 0; i < numProcesses; i++) {
-        timeClockValues.push(0)
+
+        lamportTimeClockValues.push(0)
+
+        vectorClockEntry = []
+        for (var j = 0; j < numProcesses; j++) {
+            vectorClockEntry.push(0)
+        }
+        vectorTimeClockValues.push(vectorClockEntry)
+
         eventsPerProcess.push(0)
     }
 
@@ -167,46 +232,56 @@ function drawEventCircles () {
 
         processesLocation = Math.floor(Math.random() * numProcesses)
 
+        lamportTimeClockValues[processesLocation]++
+
         xPos = Math.round(processLineWidthSpacing*processesLocation+processLineMargin)
         yPos = Math.round(processLineStart + i*(processLineLength/numEventsVal))
 
         eventType = Math.random()
-        // send event
+        
+        // inter-process message
         if (Math.random() > 0.5) {
 
             processesLocation2 = Math.floor(Math.random() * numProcesses)
             xPos2 = Math.round(processLineWidthSpacing*processesLocation2+processLineMargin)
             yPos2 = Math.round(processLineStart + (i+1)*(processLineLength/numEventsVal))
 
-            if ((xPos == xPos2) || (yPos == yPos2)) 
-            {
-                eventsPerProcess[processesLocation]++
-                drawEventCircle(xPos, yPos, "id" + (processesLocation+1) + 'c' + eventsPerProcess[processesLocation], -1, 'internalEvent', -1)
-                continue
-            }
-
-            timeClockValues[processesLocation]++
-            timeClockValues[processesLocation2] = 1+Math.max(timeClockValues[processesLocation2], timeClockValues[processesLocation])
-
             eventsPerProcess[processesLocation]++
             eventsPerProcess[processesLocation2]++
 
-            drawEventCircle(xPos, yPos, "id" + (processesLocation+1) + 'c' + eventsPerProcess[processesLocation], messageNum, 'sendEvent',yPos2)
+            vectorTimeClockValues[processesLocation][eventsPerProcess[processesLocation]]++
 
-            drawEventCircle(xPos2, yPos2, "id" + (processesLocation2+1) + 'c' + eventsPerProcess[processesLocation2], messageNum, 'receiveEvent', yPos)
+            for (var j = 0; j < numProcesses; j++) {
+                vectorTimeClockValues[processesLocation2][j] = Math.max(vectorTimeClockValues[processesLocation2][j], vectorTimeClockValues[processesLocation][j])
+            }
+            vectorTimeClockValues[processesLocation2][eventsPerProcess[processesLocation2]]
+
+            if ((xPos == xPos2) || (yPos == yPos2)) 
+            {
+                drawEventCircle(xPos, yPos, "id" + (processesLocation+1) + 'c' + eventsPerProcess[processesLocation], -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
+                continue
+            }
+
+            lamportTimeClockValues[processesLocation2] = 1+Math.max(lamportTimeClockValues[processesLocation2], lamportTimeClockValues[processesLocation])
+
+
+            drawEventCircle(xPos, yPos, "id" + (processesLocation+1) + 'c' + eventsPerProcess[processesLocation], messageNum, 'sendEvent', yPos2, vectorTimeClockValues[processesLocation])
+
+            drawEventCircle(xPos2, yPos2, "id" + (processesLocation2+1) + 'c' + eventsPerProcess[processesLocation2], messageNum, 'receiveEvent', yPos, vectorTimeClockValues[processesLocation2])
 
             drawMessage(xPos, yPos, xPos2, yPos2, messageNum++)
 
             i = i + 2
         } else {
             eventsPerProcess[processesLocation]++
-            drawEventCircle(xPos, yPos, "id" + (processesLocation+1) + 'c' + eventsPerProcess[processesLocation], -1, 'internalEvent', -1)
+            drawEventCircle(xPos, yPos, "id" + (processesLocation+1) + 'c' + eventsPerProcess[processesLocation], -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
             i++
         }
     }
 
-    showTimeStamps(timeClockValues)
-    timeClockValues = []
+    showTimeStamps(lamportTimeClockValues)
+    lamportTimeClockValues = []
+    vectorTimeClockValues = []
     eventsPerProcess = []
 }
 
@@ -262,11 +337,22 @@ function drawMessage(x1, y1, x2, y2, messageNum) {
         .style("stroke-width", "1px")
 }
 
-function showTimeStamps(timeClockValues) {
-    var j = 0
-    d3.selectAll("#timeStamp")
-        .each(function(d, i){
-            d3.select(this).text("C: " + (parseInt(i)+1) + "." + timeClockValues[j++])
+function showTimeStamps(lamportTimeClockValues) {
+
+    $('ol').empty()
+
+    val = $('input[name="timestamp-type"]:checked').val()
+
+    if (val == 'lamport-timestamps') {
+        var j = 0
+        d3.selectAll("#timeStamp")
+            .each(function(d, i){
+                d3.select(this).text("C: " + (parseInt(i)+1) + "." + lamportTimeClockValues[j++])
         })
+    } else {
+        for (var i = 0; i < vectorTimeClockValues.length; i++) {
+            $('ol').append( '<li>' + vectorTimeClockValues[i] + '</li>' );
+        }
+    }
 
 }
