@@ -404,3 +404,16 @@ function handleLamportClicked(){
 function handleVectorClicked(){
     document.getElementById("vectorClockInfo").style.display = "block"
 }
+
+function fetchParamFromURL(param) {
+    var urlQuery = window.location.search.substring(1)
+    var urlQueryvariables = urlQuery.split('&')
+
+    for (i = 0; i < urlQueryvariables.length; i++) {
+        pName = urlQueryvariables[i].split('=');
+
+        if (pName[0] === param) {
+            return typeof pName[1] === undefined ? true : decodeURIComponent(pName[1]);
+        }
+    }
+}

@@ -13,6 +13,31 @@ function setUp() {
 
         event.preventDefault()
     });
+
+    
+    numProcesses = fetchParamFromURL("numprocesses")
+    if (numProcesses === null || numProcesses === undefined) {
+        numProcesses = 5
+    } else if(numProcesses > 10) {
+        numProcesses = 10
+    }
+    $("#nodesNumSlider").val(numProcesses);
+    $('#nodesNumVal').html(numProcesses)
+
+    numEvents = fetchParamFromURL("numevents")
+    if (numEvents === null || numEvents === undefined) {
+        numEvents = 10
+    }
+    $('#eventsNum').val(numEvents)
+
+
+    seed = fetchParamFromURL("seed")
+    if (seed === null || seed === undefined) {
+        seed = 12345
+    }
+    $('#seedValue').val(seed)
+
+    drawProcessLines()
 }
 
 $('document').ready(setUp)
