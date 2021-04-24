@@ -130,12 +130,14 @@ function handleCircleDragged() {
         }
     }
 
-    d3.selectAll("#vcText" + node.attr('id')).remove();
+    removeClockValueFromNode(node, 'lamportValue')
+    removeClockValueFromNode(node, 'vcTextValue')
 }
 
 function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRecipientPos, vcValues) {
     svg.append('circle')
         .attr('id', circleId)
+        .attr('class', 'eventCircle')
         .attr('messageNum', messageNum)
         .attr('eventType', eventType)
         .attr('cx', xPos)
@@ -143,104 +145,102 @@ function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRec
         .attr('senderRecipientPos', senderRecipientPos)
         .attr('r', circleRadius)
         .attr('processNum', processesLocation)
-        .attr('lamportValue', circleId.replace('c', '.'))
+        .attr('lamportValue', circleId.substr(2).replace('c', '.'))
         .attr('lamportValueVisible', 0)
-        .attr('vcValues', vcValues)
+        .attr('vcValues', '[' + vcValues + ']')
         .attr('vcValuesVisible', 0)
         .style('fill', 'green')
         .on("mouseover", handleMouseOverNode)
         .on("mouseout", handleMouseOutNode)
         .on("click", handleMouseClickNode)
         .call(d3.drag().on("drag", handleCircleDragged));
+
+    var node = d3.select('#' + String(circleId))
+
+    addClockValueToNode(node, 'vcValues', 'none', false)
+    addClockValueToNode(node, 'lamportValue', 'none', false)
 }
 
 // http://bl.ocks.org/WilliamQLiu/76ae20060e19bf42d774
 function handleMouseOverNode() {
-   
     node = d3.select(this)
     .style('fill', 'red')
     .attr('r', 10)
 
-    var xPos = parseInt(node.attr('cx'))+10
-    var yPos = parseInt(node.attr('cy'))+10
-
-    var vcValues = node.attr('vcValues')
-    var lamportValue = node.attr('lamportValue')
-
     val = $('input[name="timestamp-type"]:checked').val() 
     if (val == 'lamport-timestamps') {
-        svg.append('text')
-            .attr('class', 'lamportValueText')
-            .attr('id', 'lamportValueText' + node.attr('id'))
-            .text(lamportValue)
-            .attr('x', xPos)
-            .attr('y', yPos)
+        if (node.attr('lamportValueVisible') == false) {
+            addClockValueToNode(node, 'lamportValue', 'block', false)
+        }
     } else if (val == 'vector-clocks') {
-        svg.append('text')
-            .attr('class', 'vcText')
-            .attr('id', 'vcText' + node.attr('id'))
-            .text(vcValues)
-            .attr('x', xPos)
-            .attr('y', yPos)
+        if (node.attr('vcValuesVisible') == false) {
+            addClockValueToNode(node, 'vcValues', 'block', false)
+        }
     }
 }
 
 function handleMouseOutNode() {
-
     node = d3.select(this)
         .style('fill', 'green')
         .attr('r', 7)  
-
+    
     val = $('input[name="timestamp-type"]:checked').val() 
     if (val == 'lamport-timestamps') {
         if (node.attr('lamportValueVisible') == false) {
-            d3.selectAll('#lamportValueText' + node.attr('id')).remove();
+            removeClockValueFromNode(node, 'lamportValueText')
         }
     } else if (val == 'vector-clocks') {
         if (node.attr('vcValuesVisible') == false) {
-            d3.selectAll('#vcText' + node.attr('id')).remove();
+            removeClockValueFromNode(node, 'vcText')
         }
     }    
+}
 
+function addClockValueToNode(node, valueType, display, visibile) {
+    var xPos = parseInt(node.attr('cx'))+10
+    var yPos = parseInt(node.attr('cy'))+10
+
+    value = node.attr(valueType)
+
+    svg.append('text')
+    .attr('class', valueType + 'Text')
+    .attr('id', valueType + 'Text' + node.attr('id'))
+    .text(value)
+    .attr('x', xPos)
+    .attr('y', yPos)
+    .style('display', display)
+
+    if (visibile) {
+        console.log(valueType)
+        node.attr(valueType + 'Visible', 1)
+    } else {
+        node.attr(valueType + 'Visible', 0)
+    }
+}
+
+function removeClockValueFromNode(node, value) {
+    console.log('#' + value + node.attr('id'))
+    d3.selectAll('#' + value + node.attr('id')).style('display', 'none');
+    node.attr('lamportValueVisible', 0)
+    node.attr('vcValuesVisible', 0)
 }
 
 function handleMouseClickNode() {
     var node = d3.select(this)
-    var vcValues = node.attr('vcValues')
-    var lamportValue = node.attr('lamportValue')
-
-    var xPos = parseInt(node.attr('cx'))+10
-    var yPos = parseInt(node.attr('cy'))+10
 
     var val = $('input[name="timestamp-type"]:checked').val() 
 
     if (val == 'lamport-timestamps') {
         if (node.attr('lamportValueVisible') == true) {
-            d3.selectAll("#lamportValueText").remove();
-            node.attr('lamportValueVisible', 0)
+            removeClockValueFromNode(node, 'lamportValue')
         } else {
-            svg.append('text')
-                .attr('class', 'lamportValueText')
-                .attr('id', 'lamportValueText' + node.attr('id'))
-                .text(lamportValue)
-                .attr('x', xPos)
-                .attr('y', yPos)
-    
-            node.attr('lamportValueVisible', 1)
+            addClockValueToNode(node, 'lamportValue', 'block', true)
         }
     } else if (val == 'vector-clocks') {
         if (node.attr('vcValuesVisible') == true) {
-            d3.selectAll("#vcText").remove();
-            node.attr('vcValuesVisible', 0)
+            removeClockValueFromNode(node, 'vcValues')
         } else {
-            svg.append('text')
-                .attr('class', 'vcText')
-                .attr('id', 'vcText' + node.attr('id'))
-                .text(vcValues)
-                .attr('x', xPos)
-                .attr('y', yPos)
-    
-            node.attr('vcValuesVisible', 1)
+            addClockValueToNode(node, 'vcValues', 'block', true)
         }
     }
 }
@@ -307,30 +307,29 @@ function drawEventCircles () {
             if ((xPos == xPos2) && (yPos == yPos2)) 
             {
                 console.log(xPos + " " + xPos2 + " " + yPos + " " + yPos2)
-                drawEventCircle(xPos, yPos, ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
+                drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
                 i++
                 eventClockLamportTimeClockValues.push([eventsPerProcess[processesLocation], (processesLocation+1)])
                 continue
             }
-
             vectorTimeClockValues[processesLocation2][processesLocation2]++
             for (var j = 0; j < numProcesses; j++) {
                 vectorTimeClockValues[processesLocation2][j] = Math.max(vectorTimeClockValues[processesLocation2][j], vectorTimeClockValues[processesLocation][j])
             }
 
 
-            drawEventCircle(xPos, yPos, ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), messageNum, 'sendEvent', yPos2, vectorTimeClockValues[processesLocation])
+            drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), messageNum, 'sendEvent', yPos2, vectorTimeClockValues[processesLocation])
             i++
 
             lamportTimeClockValues[processesLocation2] = 1+Math.max(lamportTimeClockValues[processesLocation2], lamportTimeClockValues[processesLocation])
-            drawEventCircle(xPos2, yPos2, lamportTimeClockValues[processesLocation2] + 'c' + (processesLocation2+1), messageNum, 'receiveEvent', yPos, vectorTimeClockValues[processesLocation2])
+            drawEventCircle(xPos2, yPos2, 'id' + lamportTimeClockValues[processesLocation2] + 'c' + (processesLocation2+1), messageNum, 'receiveEvent', yPos, vectorTimeClockValues[processesLocation2])
             i++
 
             drawMessage(xPos, yPos, xPos2, yPos2, messageNum++)
 
         } else {
             vectorTimeClockValues[processesLocation][processesLocation]++
-            drawEventCircle(xPos, yPos, ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
+            drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
             i++
         }
     }
@@ -340,9 +339,11 @@ function drawEventCircles () {
         xPos = Math.round(processLineWidthSpacing*processesLocation+processLineMargin)
         yPos = Math.round(processLineStart + i*(processLineLength/numEventsVal))
         vectorTimeClockValues[processesLocation][processesLocation]++
-        drawEventCircle(xPos, yPos, ++lamportTimeClockValues[processesLocation] + '.' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
+        drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + '.' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
         i++
     }
+
+    showAllClockValues()
 
     showTimeStamps(lamportTimeClockValues)
     lamportTimeClockValues = []
@@ -435,7 +436,6 @@ function showTimeStamps() {
         document.getElementById("lamportClockInfo").style.display = "none"
 
         for (var i = 0; i < vectorTimeClockValues.length; i++) {
-            $('ol').append( '<li>' + vectorTimeClockValues[i] + '</li>' );
             d3.selectAll("#lamportTimeStamp").remove()
         }
     }
@@ -447,13 +447,21 @@ function handleLamportClicked(){
     document.getElementById("lamportClockInfo").style.display = "block"
 
     d3.selectAll(".vcText").remove();
+
+    if (clockValuesShown) {
+        hideAllClockValues()
+        showAllClockValues()
+    }
 }
 
 function handleVectorClicked(){
     document.getElementById("vectorClockInfo").style.display = "block"
     document.getElementById("lamportClockInfo").style.display = "none"
 
-    d3.selectAll(".lamportValueText").remove();
+    if (clockValuesShown) {
+        hideAllClockValues()
+        showAllClockValues()
+    }
 }
 
 function fetchParamFromURL(param) {
@@ -478,6 +486,46 @@ function updateURL(numprocesses, numevents, seed) {
     window.history.pushState({}, '', url);
 }
 
+var clockValuesShown = false
+function showHideAllClockValues(){
+    if (clockValuesShown) {
+        hideAllClockValues()
+    } else {
+        showAllClockValues()
+    }
+}
+
+function showAllClockValues() {
+    val = $('input[name="timestamp-type"]:checked').val()
+
+    if (val == 'lamport-timestamps') {
+        $('.lamportValueText').show()
+        d3.selectAll('.eventCircle').each(function() {
+            d3.select(this).attr('lamportValueVisible', 1)
+        })
+    } else if (val == 'vector-clocks') {
+        $('.vcValuesText').show()
+        d3.selectAll('.eventCircle').each(function() {
+            d3.select(this).attr('vcValuesVisible', 1)
+        })
+    }
+    clockValuesShown = true
+    $('#showButton').html("Hide all Clock Values")
+}
+
+function hideAllClockValues() {
+    $('.lamportValueText').hide()
+    d3.selectAll('.eventCircle').each(function() {
+        d3.select(this).attr('lamportValueVisible', 0)
+    })
+
+    $('.vcValuesText').hide()
+    d3.selectAll('.eventCircle').each(function() {
+        d3.select(this).attr('vcValuesVisible', 0)
+    })
+    clockValuesShown = false
+    $('#showButton').html("Show all Clock Values")
+}
 
 
 // ordering visualization
@@ -486,7 +534,7 @@ function findLCTotalOrdering() {
     var lcValues = []
 
     nodes = d3.selectAll('circle').each(function(d, i){
-        lcValue = d3.select(this).attr('id').split('c')
+        lcValue = d3.select(this).attr('lamportValue').split('.')
         lcValues.push({value: lcValue[0], process: lcValue[1]})
     })
 
@@ -508,6 +556,7 @@ var orderingSVG = d3.select("#lamportClocksOrderingDiv")
     .attr("height", 100)
 
 
+// DAG showing the Lamport Clocks total ordering
 function drawLCDAG() {
 
     var lcValues = findLCTotalOrdering()
@@ -522,7 +571,7 @@ function drawLCDAG() {
         .attr('cx', startXpos + i*distanceBtwnNodes)
         .attr('cy', yPos)
         .attr('r', circleRadius)
-        .style('fill', 'orange')
+        .style('fill', 'red')
 
         xPos = (startXpos + i*distanceBtwnNodes)
 

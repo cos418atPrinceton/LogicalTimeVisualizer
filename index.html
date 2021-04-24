@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -13,7 +13,7 @@
     <div class="container" id="mainContainer">
         <p class="display-4 text-center pt-5 pb-4">Logical Time Visualizer</p>
 
-        <div class="shadow-sm p-3 mb-4 border bg-light rounded">
+        <div class="p-3 mb-4 border bg-light rounded">
             <p class="lead">This logical time visualizer allows you to view the possible ordering of events given the number of
               processes and events in a distributed system.</p>
         </div>
@@ -33,7 +33,7 @@
               <div class="col-8">
                 <input type="text" class="form-control" id="eventsNum">
               </div>
-              <button type="submit" class="col-4 btn btn-primary" id="submitDetails">Generate</button>
+              <button type="submit" class="col-4 btn btn-dark" id="submitDetails">Generate</button>
             </div>
         </form>
 
@@ -85,7 +85,8 @@
               <div class="shadow-sm mt-3 p-3 border bg-light" id="lamportClockInfo">
                 <p class="font-weight-light">1. Hover over nodes to temporarily view the Lamport Clock values.<br>
                 2. Click on nodes to persist or clear the Lamport Clock Values.</p>
-            </div>
+              </div>
+              <button type="button" class="col-12 mt-3 btn btn-dark" onclick="showHideAllClockValues()" id="showButton">Show all Clock Values</button>
         </div>
         
 
