@@ -63,26 +63,26 @@ function handleCircleDragged() {
     if (newY <= processLineStart || newY >= processLineEnd) return
 
     circleId = node.attr('id')
-    circleId = circleId.substr(2, circleId.length).split('c')
-    processesLocation = circleId[0]
-    eventPositionInProcess = circleId[1]
+    circleId = circleId.substr(2).split('c')
+    eventPositionInProcess = circleId[0]
+    processesLocation = circleId[1]
 
-    id1 = "id" + processesLocation + 'c' + (parseInt(eventPositionInProcess)-1)
+    id1 = "id" + (parseInt(eventPositionInProcess)-1) + 'c' + processesLocation
     eventAbove = svg.select("#" + id1)
     if (eventAbove.empty()) {
         eventAbove = node
         yLimitAbove = processLineStart
     } else {
-        yLimitAbove = parseInt(eventAbove.attr('cy')) + circleRadius
+        yLimitAbove = parseInt(eventAbove.attr('cy')) + circleRadius*2
     }
 
-    id2 = "id" + processesLocation + 'c' + (parseInt(eventPositionInProcess)+1)
+    id2 = "id" + (parseInt(eventPositionInProcess)+1) + 'c' + processesLocation
     eventBelow = d3.select("#" + id2)
     if (eventBelow.empty()) {
         eventBelow = node
         yLimitBelow = processLineEnd
     } else {
-        yLimitBelow = parseInt(eventBelow.attr('cy')) - circleRadius
+        yLimitBelow = parseInt(eventBelow.attr('cy')) - circleRadius*2
     }
 
     if (node.attr('eventType') == 'sendEvent') {
@@ -211,7 +211,6 @@ function addClockValueToNode(node, valueType, display, visibile) {
     .style('display', display)
 
     if (visibile) {
-        console.log(valueType)
         node.attr(valueType + 'Visible', 1)
     } else {
         node.attr(valueType + 'Visible', 0)
@@ -219,7 +218,6 @@ function addClockValueToNode(node, valueType, display, visibile) {
 }
 
 function removeClockValueFromNode(node, value) {
-    console.log('#' + value + node.attr('id'))
     d3.selectAll('#' + value + node.attr('id')).style('display', 'none');
     node.attr('lamportValueVisible', 0)
     node.attr('vcValuesVisible', 0)
@@ -306,7 +304,6 @@ function drawEventCircles () {
 
             if ((xPos == xPos2) && (yPos == yPos2)) 
             {
-                console.log(xPos + " " + xPos2 + " " + yPos + " " + yPos2)
                 drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
                 i++
                 eventClockLamportTimeClockValues.push([eventsPerProcess[processesLocation], (processesLocation+1)])
