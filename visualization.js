@@ -130,8 +130,8 @@ function handleCircleDragged() {
         }
     }
 
-    removeClockValueFromNode(node, 'lamportValue')
-    removeClockValueFromNode(node, 'vcTextValue')
+    removeClockValueFromNode(node, 'lamportValueText')
+    removeClockValueFromNode(node, 'vcValuesText')
 }
 
 function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRecipientPos, vcValues) {
@@ -170,10 +170,12 @@ function handleMouseOverNode() {
     val = $('input[name="timestamp-type"]:checked').val() 
     if (val == 'lamport-timestamps') {
         if (node.attr('lamportValueVisible') == false) {
+            d3.selectAll('#' + 'lamportValueText' + node.attr('id')).remove()
             addClockValueToNode(node, 'lamportValue', 'block', false)
         }
     } else if (val == 'vector-clocks') {
         if (node.attr('vcValuesVisible') == false) {
+            d3.selectAll('#' + 'vcValuesText' + node.attr('id')).remove()
             addClockValueToNode(node, 'vcValues', 'block', false)
         }
     }
@@ -191,7 +193,7 @@ function handleMouseOutNode() {
         }
     } else if (val == 'vector-clocks') {
         if (node.attr('vcValuesVisible') == false) {
-            removeClockValueFromNode(node, 'vcText')
+            removeClockValueFromNode(node, 'vcValuesText')
         }
     }    
 }
@@ -230,13 +232,13 @@ function handleMouseClickNode() {
 
     if (val == 'lamport-timestamps') {
         if (node.attr('lamportValueVisible') == true) {
-            removeClockValueFromNode(node, 'lamportValue')
+            removeClockValueFromNode(node, 'lamportValueText')
         } else {
             addClockValueToNode(node, 'lamportValue', 'block', true)
         }
     } else if (val == 'vector-clocks') {
         if (node.attr('vcValuesVisible') == true) {
-            removeClockValueFromNode(node, 'vcValues')
+            removeClockValueFromNode(node, 'vcValuesText')
         } else {
             addClockValueToNode(node, 'vcValues', 'block', true)
         }
@@ -302,27 +304,29 @@ function drawEventCircles () {
 
             vectorTimeClockValues[processesLocation][processesLocation]++
 
-            if ((xPos == xPos2) && (yPos == yPos2)) 
-            {
-                drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), -1, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
+            if (processesLocation != processesLocation2) {
+                drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), messageNum, 'sendEvent', yPos2, vectorTimeClockValues[processesLocation])
                 i++
-                eventClockLamportTimeClockValues.push([eventsPerProcess[processesLocation], (processesLocation+1)])
-                continue
+
+                for (var j = 0; j < numProcesses; j++) {
+                    vectorTimeClockValues[processesLocation2][j] = Math.max(vectorTimeClockValues[processesLocation2][j], vectorTimeClockValues[processesLocation][j])
+                }
+                
+                lamportTimeClockValues[processesLocation2] = 1+Math.max(lamportTimeClockValues[processesLocation2], lamportTimeClockValues[processesLocation])
+                vectorTimeClockValues[processesLocation2][processesLocation2]++
+                drawEventCircle(xPos2, yPos2, 'id' + lamportTimeClockValues[processesLocation2] + 'c' + (processesLocation2+1), messageNum, 'receiveEvent', yPos, vectorTimeClockValues[processesLocation2])
+                i++
+
+                drawMessage(xPos, yPos, xPos2, yPos2, messageNum++)
+            } else {
+                drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), messageNum, 'internalEvent', -1, vectorTimeClockValues[processesLocation])
+                i++
+
+                lamportTimeClockValues[processesLocation2] = 1+Math.max(lamportTimeClockValues[processesLocation2], lamportTimeClockValues[processesLocation])
+                vectorTimeClockValues[processesLocation2][processesLocation2]++
+                drawEventCircle(xPos2, yPos2, 'id' + lamportTimeClockValues[processesLocation2] + 'c' + (processesLocation2+1), messageNum, 'internalEvent', -1, vectorTimeClockValues[processesLocation2])
+                i++
             }
-            vectorTimeClockValues[processesLocation2][processesLocation2]++
-            for (var j = 0; j < numProcesses; j++) {
-                vectorTimeClockValues[processesLocation2][j] = Math.max(vectorTimeClockValues[processesLocation2][j], vectorTimeClockValues[processesLocation][j])
-            }
-
-
-            drawEventCircle(xPos, yPos, 'id' + ++lamportTimeClockValues[processesLocation] + 'c' + (processesLocation+1), messageNum, 'sendEvent', yPos2, vectorTimeClockValues[processesLocation])
-            i++
-
-            lamportTimeClockValues[processesLocation2] = 1+Math.max(lamportTimeClockValues[processesLocation2], lamportTimeClockValues[processesLocation])
-            drawEventCircle(xPos2, yPos2, 'id' + lamportTimeClockValues[processesLocation2] + 'c' + (processesLocation2+1), messageNum, 'receiveEvent', yPos, vectorTimeClockValues[processesLocation2])
-            i++
-
-            drawMessage(xPos, yPos, xPos2, yPos2, messageNum++)
 
         } else {
             vectorTimeClockValues[processesLocation][processesLocation]++
@@ -333,6 +337,7 @@ function drawEventCircles () {
     if (i < numEventsVal) {
         randNo = rand.quick()
         processesLocation = Math.floor(randNo * numProcesses)
+        console.log(processesLocation)
         xPos = Math.round(processLineWidthSpacing*processesLocation+processLineMargin)
         yPos = Math.round(processLineStart + i*(processLineLength/numEventsVal))
         vectorTimeClockValues[processesLocation][processesLocation]++
