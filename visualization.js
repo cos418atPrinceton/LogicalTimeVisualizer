@@ -759,7 +759,7 @@ function drawVCDAG() {
         .append("svg")
         .attr("width", width)
         .attr("id", "vectorClocksOrderingSVG")
-        .attr("height", (vcPartialOrders.length)*distanceBtwnNodes+100)
+        .attr("height", ((vcPartialOrders.length)*distanceBtwnNodes)+200)
         .classed("svg-content-responsive", true)
 
     for (var j = 0; j < vcPartialOrders.length; j++) {
