@@ -11,25 +11,25 @@
   </head>
   <body>
     <div class="container" id="mainContainer">
-        <p class="display-4 text-center pt-5 pb-4">Logical Time Visualizer</p>
+        <p class="display-4 text-center pt-5 pb-4">Interactive Logical Time Visualizer</p>
 
         <div class="p-3 mb-4 border bg-light rounded">
-            <p class="lead">This logical time visualizer allows you to view the possible ordering of events given the number of
-              processes and events in a distributed system.</p>
+            <p class="lead">This interactive logical time visualizer allows you to view the Lamport Timestamps and Vector Clock
+              values of a series of events in a distributed system, and their total and partial orderings.</p>
         </div>
 
         <form>
           <div class="form-group">
             <p>
-              <label for="nodesNumSlider" class="lead form-label" id="nodesNumLabel">Number of nodes (processes): </label>
+              <label for="nodesNumSlider" class="lead form-label" id="nodesNumLabel">Number of processes: </label>
               <strong id="nodesNumVal">5</strong>
             </p>
             <input type="range" class="form-control-range" max="10" id="nodesNumSlider">
           </div>
         </form>
-        <form id="formDetails">
+        <form id="formDetails" class="sticky-top bg-white">
             <label for="eventsNum" class="lead form-label">Number of events</label>
-            <div class="row row-cols-2">
+            <div class="row row-cols-2 sticky-top">
               <div class="col-8">
                 <input type="text" class="form-control" id="eventsNum">
               </div>
@@ -44,13 +44,29 @@
         <!-- Create a div where the graph will take place -->
         <div class="row">
           <div class="col-8">
-            <div id="vizDiv" class="shadow-sm p-3 border bg-light rounded"></div>
+            <div id="vizDiv" class="shadow-sm p-3 border bg-light rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle float-right" viewBox="0 0 16 16" data-toggle="tooltip" data-placement="right" title="The events ordered chronollogically in a downward direction with respect to physical time. Drag the nodes to explore what viable ordering of the events exist.">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+              </svg>
+            </div>
 
             <p class="lead mt-3">Lamport Clock Total Ordering</p>
-            <div class="shadow-sm mt-3 p-3 border bg-light rounded" id="lamportClocksOrderingDiv"></div>
+            <div class="shadow-sm mt-3 p-3 border bg-light rounded" id="lamportClocksOrderingDiv">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle float-right" viewBox="0 0 16 16" data-toggle="tooltip" data-placement="right" title="To create a total ordering of the events by the times at which they occur, the Lamport Clock algorithm uses an arbitrary system. Here, we break ties using the process number.">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+              </svg>
+            </div>
 
             <p class="lead mt-3">Vector Clock Partial Ordering</p>
-            <div class="shadow-sm mt-3 mb-5 p-3 border bg-light rounded" id="vectorClocksOrderingDiv"></div>
+            <div class="shadow-sm mt-3 mb-5 p-3 border bg-light rounded" id="vectorClocksOrderingDiv">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle float-right" viewBox="0 0 16 16" data-toggle="tooltip" data-placement="right" 
+              title="Lamport Clocks can't precisely order inter-process events. Vector Clocks, which use a vector of integers for each process in the distributed system, can tell us whether events are concurrent or causally dependent. Each disjoint DAG indicates causal dependence among it's nodes.">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+              </svg>
+            </div>
 
           </div>
           <div class="col-4 p-0">
@@ -58,9 +74,14 @@
                 <div class="form-check form-switch">
                   <input class="form-check-input" type="checkbox" id="randomSeedSwitch">
                   <label class="form-check-label" for="flexSwitchCheckDefault">Randomize seed</label>
+
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle float-right" viewBox="0 0 16 16" data-toggle="tooltip" data-placement="right" title="The nature of events within processes is generated randomly based on a seed value. Randomizing the seed will result in different events for the same input values, while using a fixed seed will result in similar events.">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                  </svg>
                 </div>
-                <form class="form-floating m-0 p-0">
-                  <input type="text" class="form-control" id="seedValue" value="0">
+                <form class="form-floating m-0 p-0" onsubmit="drawProcessLines(); return false">
+                  <input type="text" class="form-control" id="seedValue">
                   <label for="floatingInputValue">Seed</label>
                 </form>
               </div>

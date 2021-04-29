@@ -37,6 +37,8 @@ function setUp() {
     });
 
     drawProcessLines()
+    
+    $("body").tooltip({ selector: '[data-toggle=tooltip]' });
 }
 
 $('document').ready(setUp)

@@ -135,6 +135,9 @@ function handleCircleDragged() {
 }
 
 function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRecipientPos, vcValues) {
+
+    var processLocation = (circleId.substr(2).split('c'))[1]
+
     svg.append('circle')
         .attr('id', circleId)
         .attr('class', 'eventCircle')
@@ -144,7 +147,7 @@ function drawEventCircle (xPos, yPos, circleId, messageNum, eventType, senderRec
         .attr('cy', yPos)
         .attr('senderRecipientPos', senderRecipientPos)
         .attr('r', circleRadius)
-        .attr('processNum', processesLocation)
+        .attr('processNum', processLocation)
         .attr('lamportValue', circleId.substr(2).replace('c', '.'))
         .attr('lamportValueVisible', 0)
         .attr('vcValues', vcValues)
@@ -562,6 +565,7 @@ var lcOrderingSVG = d3.select("#lamportClocksOrderingDiv")
     .append("svg")
     .attr("width", width)
     .attr("height", 100)
+    .classed("svg-content-responsive", true)
 
 
 // DAG showing the Lamport Clocks total ordering
@@ -653,6 +657,48 @@ function compareVCValues(node1, node2) {
     if (smaller) return before
 }
 
+function findIntersectBetweenPaths(a,b){
+    for(var i = 0; i < a.length; i++) {
+        for (var j = 0; j < b.length; j++) {
+            if (a[i].includes(b[j][0])) return [i, j]
+        }
+    }
+    return -1
+}
+
+function intersectPaths(vcPartialOrders) {
+    for (var i = 0; i < vcPartialOrders.length-1; i++) {
+        for (var j = i+1; j < vcPartialOrders.length; j++) {
+            console.log(vcPartialOrders[i])
+            console.log(vcPartialOrders[j])
+            const intersectingValues = findIntersectBetweenPaths(vcPartialOrders[i], vcPartialOrders[j]);
+
+            if (intersectingValues != -1) {
+                indexI = intersectingValues[0]
+                indexJ = intersectingValues[1]
+            } else {
+                continue
+            }
+
+            console.log(indexI)
+            console.log(indexJ)
+
+            if (indexI > indexJ) {
+                for(var k = indexJ; k > 0; k--) {
+                    vcPartialOrders[i][indexI-k].push(vcPartialOrders[j][indexJ-k][0])
+                }
+                vcPartialOrders.splice(indexJ, 1)
+            } else {
+                for(var k = indexI; k > 0; k--) {
+                    vcPartialOrders[j][indexJ-k].push(vcPartialOrders[i][indexI-k][0])
+                }
+                vcPartialOrders.splice(indexI, 1)
+            }
+        }
+    }
+    return vcPartialOrders
+}
+
 function findVCPartialOrdering() {
 
     nodes = d3.selectAll('.eventCircle')._groups[0]
@@ -662,19 +708,38 @@ function findVCPartialOrdering() {
     const eventSet = new Set()
     for (var i = 0; i < nodes.length; i++) {
         firstInPartialOrder = nodes[i]
+        var currProcess = firstInPartialOrder.getAttribute('processNum')
         if (eventSet.has(firstInPartialOrder.getAttribute('id'))) continue
-        vcPartialOrder = [firstInPartialOrder]
+        vcPartialOrder = [[firstInPartialOrder.getAttribute('vcValues')]]
         eventSet.add(firstInPartialOrder.getAttribute('id'))
-        for (var j = 0; j < nodes.length; j++) {
-            if (firstInPartialOrder.getAttribute('id') === nodes[j].getAttribute('id')) continue
-            compareVCValues(nodes[j], firstInPartialOrder)
-            if (after === compareVCValues(nodes[j], firstInPartialOrder)) {
-                vcPartialOrder.push(nodes[j])
-                eventSet.add(nodes[j].getAttribute('id'))
+        for (var j = i+1; j < nodes.length; j++) {
+            if (after === compareVCValues(nodes[j], firstInPartialOrder))
+            {
+                if (nodes[j].getAttribute('eventType') === 'receiveEvent') {
+                    vcPartialOrder.push([nodes[j].getAttribute('vcValues')])
+                    currProcess = nodes[j].getAttribute('processNum')
+                    console.log(j)
+                    console.log(currProcess)
+                    eventSet.add(nodes[j].getAttribute('id')) 
+                } else if (nodes[j].getAttribute('processNum') === currProcess) {
+                    vcPartialOrder.push([nodes[j].getAttribute('vcValues')])
+                    currProcess = nodes[j].getAttribute('processNum')
+                    eventSet.add(nodes[j].getAttribute('id')) 
+                }
+                else if (firstInPartialOrder.getAttribute('processNum') == nodes[j].getAttribute('processNum')) {
+                    vcPartialOrders.push(vcPartialOrder)
+
+                    vcPartialOrder = [[firstInPartialOrder.getAttribute('vcValues')]]
+                    vcPartialOrder.push([nodes[j].getAttribute('vcValues')])
+                    eventSet.add(nodes[j].getAttribute('id'))
+                }
             }
         }
         vcPartialOrders.push(vcPartialOrder)
     }
+
+    // vcPartialOrders = intersectPaths(vcPartialOrders)
+    // console.log(vcPartialOrders)
 
     return vcPartialOrders
 }
@@ -683,68 +748,79 @@ function findVCPartialOrdering() {
 function drawVCDAG() {
 
     var vcPartialOrders = findVCPartialOrdering()
-    console.log(vcPartialOrders)
     startXpos = 20
     distanceBtwnNodes = 75
 
     startYPos = 50
-    distanceBetweenGraphs = 75
+    distanceBetweenGraphs = 100
 
     d3.select("#vectorClocksOrderingSVG").remove()
     var vcOrderingSVG = d3.select("#vectorClocksOrderingDiv")
         .append("svg")
         .attr("width", width)
         .attr("id", "vectorClocksOrderingSVG")
-        .attr("height", (vcPartialOrders.length)*distanceBtwnNodes+25)
+        .attr("height", (vcPartialOrders.length)*distanceBtwnNodes+100)
+        .classed("svg-content-responsive", true)
 
     for (var j = 0; j < vcPartialOrders.length; j++) {
         vcPartialOrder = vcPartialOrders[j]
         startYPos = 50
-
         for (var i = 0; i < vcPartialOrder.length; i++) {
-            vcOrderingSVG.append('circle')
-            .attr('cx', startXpos + i*distanceBtwnNodes)
-            .attr('cy', startYPos + (j*distanceBetweenGraphs))
-            .attr('r', circleRadius)
-            .style('fill', 'red')
-    
-            xPos = startXpos + i*distanceBtwnNodes
-            yPos = startYPos + (j*distanceBetweenGraphs)
-    
-            vcOrderingSVG.append('text')
-            .attr('x', xPos-circleRadius)
-            .attr('y', yPos+25)
-            .text('[' + vcPartialOrder[i].getAttribute('vcValues') + ']')
-    
-            if (i == vcPartialOrder.length-1) break
-    
-            points = [[xPos+circleRadius, yPos], [(startXpos + (i+1)*distanceBtwnNodes)-(circleRadius*1.75), yPos]]
-    
-            vcOrderingSVG.append('defs')
-            .append('marker')
-            .attr('id', 'arrow')
-            .attr('viewBox', [0, 0, 20, 20])
-            .attr('refX', 10)
-            .attr('refY', 10)
-            .attr('markerWidth', 10)
-            .attr('markerHeight', 10)
-            .attr('orient', 'auto-start-reverse')
-            .append('path')
-            .attr('d', d3.line()([[0, 0], [0, 20], [20, 10]]))
-            .attr('stroke', 'black')
-    
-            vcOrderingSVG.append('path')
-            .attr('class', 'messagePath')
-            .attr('d', d3.line()(points))
-            .attr('stroke', 'blue')
-            .attr('x1', points[0][0])
-            .attr('y1', points[0][1])
-            .attr('x2', points[1][0])
-            .attr('y2', points[1][1])
-            .attr('marker-end', 'url(#arrow)')
-            .attr('fill', 'none')
-            .style("stroke-opacity", 1)
-            .style("stroke-width", "1px")
+
+            for (var k = 0; k < vcPartialOrder[i].length; k++) {
+
+                yPos = startYPos + (j*distanceBetweenGraphs) + (k*50)
+
+                vcOrderingSVG.append('circle')
+                .attr('cx', startXpos + i*distanceBtwnNodes)
+                .attr('cy', yPos)
+                .attr('r', circleRadius)
+                .style('fill', 'red')
+        
+                xPos = startXpos + i*distanceBtwnNodes
+
+                if (k === 0) {
+                    yPos2 = yPos
+                } else {
+                    yPos = startYPos + (j*distanceBetweenGraphs) + 40 + circleRadius
+                    yPos2 = startYPos + (j*distanceBetweenGraphs) + ((k-1)*40) + circleRadius
+                }
+        
+                vcOrderingSVG.append('text')
+                .attr('x', xPos-circleRadius)
+                .attr('y', yPos+25)
+                .text('[' + vcPartialOrder[i][k] + ']')
+        
+                if (i == vcPartialOrder.length-1) break
+        
+                points = [[xPos+circleRadius, yPos], [(startXpos + (i+1)*distanceBtwnNodes)-(circleRadius*1.75), yPos2]]
+        
+                vcOrderingSVG.append('defs')
+                .append('marker')
+                .attr('id', 'arrow')
+                .attr('viewBox', [0, 0, 20, 20])
+                .attr('refX', 10)
+                .attr('refY', 10)
+                .attr('markerWidth', 10)
+                .attr('markerHeight', 10)
+                .attr('orient', 'auto-start-reverse')
+                .append('path')
+                .attr('d', d3.line()([[0, 0], [0, 20], [20, 10]]))
+                .attr('stroke', 'black')
+        
+                vcOrderingSVG.append('path')
+                .attr('class', 'messagePath')
+                .attr('d', d3.line()(points))
+                .attr('stroke', 'blue')
+                .attr('x1', points[0][0])
+                .attr('y1', points[0][1])
+                .attr('x2', points[1][0])
+                .attr('y2', points[1][1])
+                .attr('marker-end', 'url(#arrow)')
+                .attr('fill', 'none')
+                .style("stroke-opacity", 1)
+                .style("stroke-width", "1px")
+            }
         }
     }
 }
