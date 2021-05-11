@@ -573,7 +573,7 @@ function drawLCDAG() {
 
     var lcValues = findLCTotalOrdering()
     startXpos = 20
-    distanceBtwnNodes = 75
+    distanceBtwnNodes = 70
 
     yPos = 50
 
@@ -765,6 +765,7 @@ function drawVCDAG() {
     for (var j = 0; j < vcPartialOrders.length; j++) {
         vcPartialOrder = vcPartialOrders[j]
         startYPos = 50
+        var up = 1
         for (var i = 0; i < vcPartialOrder.length; i++) {
 
             for (var k = 0; k < vcPartialOrder[i].length; k++) {
@@ -786,10 +787,21 @@ function drawVCDAG() {
                     yPos2 = startYPos + (j*distanceBetweenGraphs) + ((k-1)*40) + circleRadius
                 }
         
-                vcOrderingSVG.append('text')
-                .attr('x', xPos-circleRadius)
-                .attr('y', yPos+25)
-                .text('[' + vcPartialOrder[i][k] + ']')
+                if (up === 1) {
+                    vcOrderingSVG.append('text')
+                    .attr('x', xPos-circleRadius)
+                    .attr('y', yPos+25)
+                    .text('[' + vcPartialOrder[i][k] + ']')
+
+                    up = 0
+                } else {
+                    vcOrderingSVG.append('text')
+                    .attr('x', xPos-circleRadius)
+                    .attr('y', yPos-20)
+                    .text('[' + vcPartialOrder[i][k] + ']')
+
+                    up = 1
+                }
         
                 if (i == vcPartialOrder.length-1) break
         
